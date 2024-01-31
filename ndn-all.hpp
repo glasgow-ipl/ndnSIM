@@ -38,7 +38,7 @@
 // #include "ns3/ndnSIM/model/ndn-app-face.hpp"
 #include "ns3/ndnSIM/model/ndn-l3-protocol.hpp"
 // #include "ns3/ndnSIM/model/ndn-net-device-face.hpp"
-
+#include "ns3/ndnSIM/model/ndn-packet-filter.hpp"
 // #include "ns3/ndnSIM/apps/ndn-app.hpp"
 
 #include "ns3/ndnSIM/NFD/daemon/fw/forwarder.hpp"

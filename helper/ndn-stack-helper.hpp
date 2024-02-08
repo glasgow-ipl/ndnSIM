@@ -26,6 +26,7 @@
 #include "ns3/object-factory.h"
 #include "ns3/node.h"
 #include "ns3/node-container.h"
+#include "ns3/traffic-control-layer.h"
 
 #include "ndn-fib-helper.hpp"
 #include "ndn-strategy-choice-helper.hpp"
@@ -117,6 +118,8 @@ public:
    */
   void
   RemoveFaceCreateCallback(TypeId netDeviceType, FaceCreateCallback callback);
+
+  
 
   /**
   * \brief Install Ndn stack on the node
@@ -231,6 +234,10 @@ public:
   ProcessWarmupEvents();
 
 private:
+  static void 
+  CreateAndAggregateObjectFromTypeId (Ptr<Node> node, const std::string typeId);
+
+
   void
   doInstall(Ptr<Node> node) const;
 

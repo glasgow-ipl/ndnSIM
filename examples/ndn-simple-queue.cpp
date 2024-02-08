@@ -29,6 +29,7 @@
 #include "ns3/internet-stack-helper.h"
 #include "ns3/object.h"
 #include "ns3/traffic-control-module.h"
+#include "ns3/flow-monitor-module.h"
 
 namespace ns3 {
 
@@ -91,6 +92,13 @@ void
 	      Ptr<Object> protocol = factory.Create <Object> ();
 	        node->AggregateObject (protocol);
 	}
+
+void
+        SojournTimeTrace (Time sojournTime)
+        {
+                  std::cout << "Sojourn time " << sojournTime.ToDouble (Time::MS) << "ms" << std::endl;
+        }
+
 int
 main(int argc, char* argv[])
 {
@@ -110,53 +118,78 @@ main(int argc, char* argv[])
 
   // Creating nodes
   NodeContainer nodes;
-  nodes.Create(3);
-  
-  // traffic-control-layer
-  TrafficControlLayer tcl0 = TrafficControlLayer();
-  TrafficControlLayer tcl1 = TrafficControlLayer();
-  TrafficControlLayer tcl2 = TrafficControlLayer();
-  tcl0.SetNode(nodes.Get(0));
-  tcl1.SetNode(nodes.Get(1));
-  tcl2.SetNode(nodes.Get(2));
-  
-  CreateAndAggregateObjectFromTypeId (nodes.Get(0), "ns3::TrafficControlLayer");
-  CreateAndAggregateObjectFromTypeId (nodes.Get(1), "ns3::TrafficControlLayer");
-  CreateAndAggregateObjectFromTypeId (nodes.Get(2), "ns3::TrafficControlLayer");
+  nodes.Create(4);
+  std::cout << "Nodes created" << std::endl;
 
-  // set queue
-  //setup traffic control 
-  TrafficControlHelper tch;
-  uint16_t handle = tch.SetRootQueueDisc("ns3::PrioQueueDisc", "Priomap", StringValue("0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1"));
-  TrafficControlHelper::ClassIdList cid = tch.AddQueueDiscClasses(handle, 2, "ns3::QueueDiscClass");
-  tch.AddChildQueueDisc(handle,cid[0], "ns3::FifoQueueDisc");
-  tch.AddChildQueueDisc(handle,cid[1], "ns3::FifoQueueDisc");
-  tch.AddPacketFilter(handle,"ns3::ndn::NdnPacketFilter");
-  
   NetDeviceContainer devices;
-
-
   // Connecting nodes using two links
   PointToPointHelper p2p;
   devices = p2p.Install(nodes.Get(0), nodes.Get(1));
   devices.Add(p2p.Install(nodes.Get(1), nodes.Get(2)));
-  p2p.SetQueue("ns3::DropTailQueue","MaxSize", StringValue("10p"));
-  QueueDiscContainer qdiscs = tch.Install (devices);
+  devices.Add(p2p.Install(nodes.Get(3), nodes.Get(1)));
+  p2p.SetQueue("ns3::DropTailQueue","MaxSize", StringValue("1000p"));
 
-  Ptr<QueueDisc> q = qdiscs.Get (1);
-  q->TraceConnectWithoutContext ("PacketsInQueue", MakeCallback (&TcPacketsInQueueTrace));
-
-  Ptr<NetDevice> nd = devices.Get(1);
-  Ptr<PointToPointNetDevice> ptpnd = DynamicCast<PointToPointNetDevice>(nd);
-  Ptr<Queue<Packet> > queue = ptpnd->GetQueue();
-  //queue->TraceConnectWithoutContext("PacketsInQueue", MakeCallback(&DevicePacketsInQueueTrace));
-
-  // Install NDN stack on all nodes
+// Install NDN stack on all nodes
   ndn::StackHelper ndnHelper;
   ndnHelper.SetDefaultRoutes(true);
   ndnHelper.InstallAll();
 
-  // Choosing forwarding strategy
+
+  // traffic-control-layer
+ // TrafficControlLayer tcl0 = TrafficControlLayer();
+ // TrafficControlLayer tcl1 = TrafficControlLayer();
+ // TrafficControlLayer tcl2 = TrafficControlLayer();
+ // tcl0.SetNode(nodes.Get(0));
+ // tcl1.SetNode(nodes.Get(1));
+ // tcl2.SetNode(nodes.Get(2));
+ // std::cout << "TCL: nodes set" <<std::endl; 
+ // CreateAndAggregateObjectFromTypeId (nodes.Get(0), "ns3::TrafficControlLayer");
+ // CreateAndAggregateObjectFromTypeId (nodes.Get(1), "ns3::TrafficControlLayer");
+ // CreateAndAggregateObjectFromTypeId (nodes.Get(2), "ns3::TrafficControlLayer");
+
+
+
+// set queue
+  //setup traffic control 
+  std::cout << "About to setup PrioQueueDisc" << std::endl;
+  TrafficControlHelper tch;
+  uint16_t handle = tch.SetRootQueueDisc("ns3::PrioQueueDisc", "Priomap", StringValue("0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1"));
+
+
+  TrafficControlHelper::ClassIdList cid = tch.AddQueueDiscClasses(handle, 2, "ns3::QueueDiscClass");
+  uint16_t qdhandle0 = tch.AddChildQueueDisc(handle,cid[0], "ns3::FifoQueueDisc");
+  uint16_t qdhandle1 = tch.AddChildQueueDisc(handle,cid[1], "ns3::FifoQueueDisc");
+  tch.AddPacketFilter(handle,"ns3::ndn::NdnPacketFilter");
+  
+  tch.AddInternalQueues(qdhandle0, 1, "ns3::DropTailQueue","MaxSize",StringValue("1000p"));
+  tch.AddInternalQueues(qdhandle1, 1, "ns3::DropTailQueue","MaxSize",StringValue("1000p"));
+
+  QueueDiscContainer qdiscs = tch.Install (devices);
+
+  Ptr<QueueDisc> q = qdiscs.Get (1);
+  q->TraceConnectWithoutContext ("PacketsInQueue", MakeCallback (&TcPacketsInQueueTrace));
+  Config::ConnectWithoutContext ("/NodeList/1/$ns3::TrafficControlLayer/RootQueueDiscList/0/SojournTime",
+                                 MakeCallback (&SojournTimeTrace));
+
+  Ptr<NetDevice> nd = devices.Get(1);
+  Ptr<PointToPointNetDevice> ptpnd = DynamicCast<PointToPointNetDevice>(nd);
+  Ptr<Queue<Packet> > queue = ptpnd->GetQueue();
+  queue->TraceConnectWithoutContext("PacketsInQueue", MakeCallback(&DevicePacketsInQueueTrace));
+  
+  Ptr<TrafficControlLayer> tc = devices.Get(0)->GetNode ()->GetObject<TrafficControlLayer> ();
+  tc->ScanDevices();
+  Ptr<TrafficControlLayer> tc1 = devices.Get(1)->GetNode ()->GetObject<TrafficControlLayer> ();
+  tc1->ScanDevices();
+  Ptr<TrafficControlLayer> tc2 = devices.Get(2)->GetNode ()->GetObject<TrafficControlLayer> ();
+  tc2->ScanDevices();
+  Ptr<TrafficControlLayer> tc3 = devices.Get(3)->GetNode ()->GetObject<TrafficControlLayer> ();
+  tc3->ScanDevices();
+  Ptr<TrafficControlLayer> tc4 = devices.Get(4)->GetNode ()->GetObject<TrafficControlLayer> ();
+  tc4->ScanDevices();
+  
+
+
+    // Choosing forwarding strategy
   ndn::StrategyChoiceHelper::InstallAll("/prefix", "/localhost/nfd/strategy/multicast");
 
   // Installing applications
@@ -165,10 +198,11 @@ main(int argc, char* argv[])
   ndn::AppHelper consumerHelper("ns3::ndn::ConsumerCbr");
   // Consumer will request /prefix/0, /prefix/1, ...
   consumerHelper.SetPrefix("/prefix");
-  consumerHelper.SetAttribute("Frequency", StringValue("100")); // 10 interests a second
+  consumerHelper.SetAttribute("Frequency", StringValue("1000")); // 10 interests a second
   auto apps = consumerHelper.Install(nodes.Get(0));                        // first node
   apps.Stop(Seconds(10.0)); // stop the consumer app at 10 seconds mark
-
+  auto appsn3 = consumerHelper.Install(nodes.Get(3));
+  appsn3.Stop(Seconds(5.0));
   // Producer
   ndn::AppHelper producerHelper("ns3::ndn::Producer");
   // Producer will reply to all requests starting with /prefix
@@ -183,7 +217,7 @@ main(int argc, char* argv[])
 		  MakeCallback(&PcapWriter::TracePacket, &trace));
 
   Simulator::Stop(Seconds(20.0));
-
+  std::cout << "Start the simulation" << std::endl;
   Simulator::Run();
   Simulator::Destroy();
 

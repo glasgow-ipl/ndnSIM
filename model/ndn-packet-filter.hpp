@@ -22,7 +22,7 @@ namespace ndn{
 
     private:
       virtual bool CheckProtocol (Ptr<QueueDiscItem> item) const;
-      virtual int32_t DoClassify (Ptr<QueueDiscItem> item) const = 0;
+      virtual int32_t DoClassify (Ptr<QueueDiscItem> item) const;
   };
 } //namespace ndn
 } //namespace ns3

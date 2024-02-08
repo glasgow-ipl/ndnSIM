@@ -31,6 +31,7 @@
 
 #include "ns3/point-to-point-net-device.h"
 #include "ns3/channel.h"
+#include "ns3/traffic-control-layer.h"
 
 namespace ns3 {
 namespace ndn {
@@ -71,8 +72,12 @@ private:
                        const Address& from, const Address& to,
                        NetDevice::PacketType packetType);
 
+  void
+  SetTrafficControl(Ptr<TrafficControlLayer> tc);
+
   Ptr<NetDevice> m_netDevice; ///< \brief Smart pointer to NetDevice
   Ptr<Node> m_node;
+  Ptr<TrafficControlLayer> m_tc; //Pointer to traffic control layer
 };
 
 } // namespace ndn

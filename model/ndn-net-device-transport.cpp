@@ -22,12 +22,15 @@
 #include "../helper/ndn-stack-helper.hpp"
 #include "ndn-block-header.hpp"
 #include "../utils/ndn-ns3-packet-tag.hpp"
+#include "ndn-queue-disc-item.hpp"
 
 #include <ndn-cxx/encoding/block.hpp>
 #include <ndn-cxx/interest.hpp>
 #include <ndn-cxx/data.hpp>
 
 #include "ns3/queue.h"
+
+#include "ns3/mac48-address.h"
 
 NS_LOG_COMPONENT_DEFINE("ndn.NetDeviceTransport");
 
@@ -71,10 +74,18 @@ NetDeviceTransport::NetDeviceTransport(Ptr<Node> node,
                   << this->getLocalUri());
 
   NS_ASSERT_MSG(m_netDevice != 0, "NetDeviceFace needs to be assigned a valid NetDevice");
+  Ptr<TrafficControlLayer> tc = m_node->GetObject<TrafficControlLayer>();
 
-  m_node->RegisterProtocolHandler(MakeCallback(&NetDeviceTransport::receiveFromNetDevice, this),
-                                  L3Protocol::ETHERNET_FRAME_TYPE, m_netDevice,
-                                  true /*promiscuous mode*/);
+  m_node->RegisterProtocolHandler (MakeCallback (&TrafficControlLayer::Receive, tc),
+                                                     L3Protocol::ETHERNET_FRAME_TYPE, m_netDevice);
+  tc->RegisterProtocolHandler (MakeCallback (&NetDeviceTransport::receiveFromNetDevice, this),
+                                                  L3Protocol::ETHERNET_FRAME_TYPE, m_netDevice);
+
+//  m_node->RegisterProtocolHandler(MakeCallback(&NetDeviceTransport::receiveFromNetDevice, this),
+//                                  L3Protocol::ETHERNET_FRAME_TYPE, m_netDevice,
+//                                  true /*promiscuous mode*/);
+
+  this->SetTrafficControl(tc);
 }
 
 NetDeviceTransport::~NetDeviceTransport()
@@ -96,6 +107,13 @@ NetDeviceTransport::getSendQueueLength()
 }
 
 void
+NetDeviceTransport::SetTrafficControl (Ptr<TrafficControlLayer> tc)
+{
+  NS_LOG_FUNCTION (this << tc);
+  m_tc = tc;
+}
+
+void
 NetDeviceTransport::doClose()
 {
   NS_LOG_FUNCTION(this << "Closing transport for netDevice with URI"
@@ -109,14 +127,19 @@ void
 NetDeviceTransport::doSend(const Block& packet)
 {
   NS_LOG_FUNCTION(this << "Sending packet from netDevice with URI"
-                  << this->getLocalUri());
+                  << this->getLocalUri() << " to " << this->getRemoteUri());
 
   // convert NFD packet to NS3 packet
   BlockHeader header(packet);
 
   Ptr<ns3::Packet> ns3Packet = Create<ns3::Packet>();
   ns3Packet->AddHeader(header);
-
+  
+  if(this->m_tc!=NULL){
+    NS_LOG_FUNCTION(this << "m_tc!=NULL: sending via m_tc->Send() Addr:" << m_netDevice->GetBroadcast()<<" dev:"<<m_netDevice);
+    m_tc->Send(m_netDevice, Create<NdnQueueDiscItem> (ns3Packet, m_netDevice->GetBroadcast(), L3Protocol::ETHERNET_FRAME_TYPE, header, 0));
+    return;
+  }
   // send the NS3 packet
   m_netDevice->Send(ns3Packet, m_netDevice->GetBroadcast(),
                     L3Protocol::ETHERNET_FRAME_TYPE);

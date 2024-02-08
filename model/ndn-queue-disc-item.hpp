@@ -4,11 +4,13 @@
 #include "ns3/object.h"
 #include "ns3/queue-item.h"
 
+#include "ndn-block-header.hpp"
+
 namespace ns3{
   namespace ndn{
     class NdnQueueDiscItem : public QueueDiscItem {
       public:
-        NdnQueueDiscItem (Ptr<Packet> p, uint16_t protocol, uint16_t fb_field);
+        NdnQueueDiscItem (Ptr<Packet> p, const Address & addr, uint16_t protocol, const BlockHeader &header, uint16_t fb_field);
 
         virtual ~ NdnQueueDiscItem ();
 
@@ -17,6 +19,9 @@ namespace ns3{
         virtual uint16_t GetFbField(void) const;
 
         virtual void Print (std::ostream &os) const;
+
+	virtual bool Mark (void);
+        virtual void AddHeader(void);
 
       private:
         //default const
@@ -31,7 +36,7 @@ namespace ns3{
          *      * \returns
          *    */
         NdnQueueDiscItem &operator = (const NdnQueueDiscItem &);
-
+        BlockHeader m_header; //NDN block header
         uint16_t m_fb_field = 0; //forwarding behaviour field
 
     };

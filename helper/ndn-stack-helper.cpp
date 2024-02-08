@@ -26,6 +26,8 @@
 #include "ns3/point-to-point-channel.h"
 #include "ns3/node-list.h"
 #include "ns3/simulator.h"
+#include "ns3/object.h"
+#include "ns3/traffic-control-layer.h"
 
 #if HAVE_NS3_VISUALIZER
 #include "../../visualizer/model/visual-simulator-impl.h"
@@ -133,6 +135,15 @@ StackHelper::setPolicy(const std::string& policy)
 }
 
 void
+StackHelper::CreateAndAggregateObjectFromTypeId (Ptr<Node> node, const std::string typeId)
+{
+  ObjectFactory factory;
+  factory.SetTypeId (typeId);
+  Ptr<Object> protocol = factory.Create <Object> ();
+  node->AggregateObject (protocol);
+}
+
+void
 StackHelper::Install(const NodeContainer& c) const
 {
   for (NodeContainer::Iterator i = c.Begin(); i != c.End(); ++i) {
@@ -176,9 +187,13 @@ StackHelper::doInstall(Ptr<Node> node) const
 
   ndn->setCsReplacementPolicy(m_csPolicyCreationFunc);
 
+
   // Aggregate L3Protocol on node (must be after setting ndnSIM CS)
   node->AggregateObject(ndn);
-
+  NS_LOG_FUNCTION("CreateAndAggregateObject");
+  CreateAndAggregateObjectFromTypeId (node, "ns3::TrafficControlLayer"); 
+  Ptr<TrafficControlLayer> tc = node->GetObject<TrafficControlLayer>();
+  NS_ASSERT(tc);
   for (uint32_t index = 0; index < node->GetNDevices(); index++) {
     Ptr<NetDevice> device = node->GetDevice(index);
     // This check does not make sense: LoopbackNetDevice is installed only if IP stack is installed,
@@ -187,6 +202,7 @@ StackHelper::doInstall(Ptr<Node> node) const
     //   continue; // don't create face for a LoopbackNetDevice
 
     this->createAndRegisterFace(node, ndn, device);
+    tc->ScanDevices();
   }
 }
 

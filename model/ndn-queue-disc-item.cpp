@@ -1,5 +1,7 @@
 #include "ndn-queue-disc-item.hpp"
 
+#include <boost/utility/binary.hpp>
+
 #include "ns3/log.h"
 #include "ns3/queue.h"
 
@@ -8,10 +10,10 @@ namespace ns3 {
 
   NS_LOG_COMPONENT_DEFINE("NdnQueueDiscItem");
 
-  NdnQueueDiscItem::NdnQueueDiscItem (Ptr<Packet> p, uint16_t protocol, uint16_t fb_field = 0)
-    : QueueDiscItem (p, ns3::Address() , protocol)
+  NdnQueueDiscItem::NdnQueueDiscItem (Ptr<Packet> p, const Address& addr, uint16_t protocol, const BlockHeader &header, uint16_t fb_field = 0)
+    : QueueDiscItem (p, addr , protocol),
+    m_fb_field(BOOST_BINARY( 10111000 ))
   {
-    m_fb_field = fb_field;
   }
 
   NdnQueueDiscItem::~NdnQueueDiscItem()
@@ -41,6 +43,18 @@ namespace ns3 {
   {
     NS_LOG_FUNCTION(this);
     return this->m_fb_field;
+  }
+
+  void NdnQueueDiscItem::AddHeader(void)
+  {
+    NS_LOG_FUNCTION(this);
+  }
+
+  bool
+  NdnQueueDiscItem::Mark(void)
+  {
+    NS_LOG_FUNCTION(this);
+    return false;
   }
 
 

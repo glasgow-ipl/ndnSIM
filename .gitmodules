@@ -1,7 +1,7 @@
 [submodule "NFD"]
 	path = NFD
 	url = git@github.com:glasgow-ipl/NFD.git
-branch = NFD-0.7.0-ndnSIM
+	branch = NFD-22.02-ndnSIM-ry6 
 [submodule "ndn-cxx"]
 	path = ndn-cxx
 	url = git@github.com:glasgow-ipl/ndn-cxx.git

@@ -12,7 +12,7 @@ namespace ns3 {
 
   NdnQueueDiscItem::NdnQueueDiscItem (Ptr<Packet> p, const Address& addr, uint16_t protocol, const BlockHeader &header, uint16_t fb_field = 0)
     : QueueDiscItem (p, addr , protocol),
-    m_fb_field(BOOST_BINARY( 10111000 ))
+    m_fb_field(fb_field)
   {
   }
 

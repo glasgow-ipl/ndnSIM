@@ -50,6 +50,8 @@ NdnPacketFilter::DoClassify (Ptr<QueueDiscItem> item) const
 {
   NS_LOG_FUNCTION ("NdnPacketFilter::DoClassify()");
   NS_LOG_FUNCTION (DynamicCast<NdnQueueDiscItem>(item));
+  NS_LOG_FUNCTION (DynamicCast<NdnQueueDiscItem>(item)->GetFbField());
+
   return Socket::IpTos2Priority(DynamicCast<NdnQueueDiscItem> (item)->GetFbField());
 }
 

@@ -153,12 +153,13 @@ main(int argc, char* argv[])
   //setup traffic control 
   std::cout << "About to setup PrioQueueDisc" << std::endl;
   TrafficControlHelper tch;
-  uint16_t handle = tch.SetRootQueueDisc("ns3::PrioQueueDisc", "Priomap", StringValue("0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1"));
+  //uint16_t handle = tch.SetRootQueueDisc("ns3::PrioQueueDisc", "Priomap", StringValue("0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1"));
+  uint16_t handle = tch.SetRootQueueDisc("ns3::PrioQueueDisc", "Priomap", StringValue("1 1 1 1 0 1 1 1 1 1 1 1 1 1 1 1"));
 
 
   TrafficControlHelper::ClassIdList cid = tch.AddQueueDiscClasses(handle, 2, "ns3::QueueDiscClass");
   uint16_t qdhandle0 = tch.AddChildQueueDisc(handle,cid[0], "ns3::FifoQueueDisc");
-  uint16_t qdhandle1 = tch.AddChildQueueDisc(handle,cid[1], "ns3::FifoQueueDisc");
+  uint16_t qdhandle1 = tch.AddChildQueueDisc(handle,cid[1], "ns3::RedQueueDisc");
   tch.AddPacketFilter(handle,"ns3::ndn::NdnPacketFilter");
   
   tch.AddInternalQueues(qdhandle0, 1, "ns3::DropTailQueue","MaxSize",StringValue("1000p"));
@@ -198,7 +199,7 @@ main(int argc, char* argv[])
   ndn::AppHelper consumerHelper("ns3::ndn::ConsumerCbr");
   // Consumer will request /prefix/0, /prefix/1, ...
   consumerHelper.SetPrefix("/prefix");
-  consumerHelper.SetAttribute("Frequency", StringValue("100")); // 10 interests a second
+  consumerHelper.SetAttribute("Frequency", StringValue("500")); //  interests a second
   
   auto apps = consumerHelper.Install(nodes.Get(0));                        // first node
   apps.Stop(Seconds(10.0)); // stop the consumer app at 10 seconds mark

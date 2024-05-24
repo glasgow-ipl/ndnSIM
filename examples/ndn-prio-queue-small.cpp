@@ -109,12 +109,27 @@ main(int argc, char* argv[])
   strftime(buf, sizeof buf, "%Y-%m-%d-%H%M", gmtime(&now));
   string prefix = "";
   string date = buf;
-  string exp_name = "-ndn-prioqueue-small-";
-  prefix.append(date);
-  prefix.append(exp_name);
-
-
+  string exp_name = "ndn-prioqueue-small";
+  uint32_t std_prefix_rate = 300; //default 300 pps
+  uint32_t prio_prefix_rate = 300; //default 300 pps
   uint32_t queueSize=10;
+  string out_dir = "./";
+  uint64_t run_num = 1; //defaut run number
+
+  CommandLine cmd (__FILE__);
+  cmd.AddValue("stdPRate", "Standard packet rate (pps) per app instance", std_prefix_rate);
+  cmd.AddValue("prioPRate", "Prioritised packet rate (pps) per app instance", prio_prefix_rate);
+  cmd.AddValue("outDir", "Output directory",out_dir);
+  cmd.AddValue("expName", "Experiment name override", exp_name);
+  cmd.AddValue("runNum", "NS3 Run Number",run_num);
+  cmd.AddValue("date","Date string override",date);
+  cmd.Parse(argc,argv);
+  
+  prefix.append(date);
+  prefix.append("-"+exp_name);
+  prefix.append("-"+run_num);
+  prefix.append("-"+std::to_string(std_prefix_rate)+"std_pps");
+  prefix.append("-"+std::to_string(prio_prefix_rate)+"prio_pps-");
   // setting default parameters for PointToPoint links and channels
   Config::SetDefault("ns3::PointToPointNetDevice::DataRate", StringValue("2.0Mbps"));
   Config::SetDefault("ns3::PointToPointChannel::Delay", StringValue("20ms"));
@@ -122,10 +137,10 @@ main(int argc, char* argv[])
   // Devices queue configuration
   //Config::SetDefault ("ns3::DropTailQueue<Packet>::MaxSize",
                        //QueueSizeValue (QueueSize (QueueSizeUnit::PACKETS, queueSize)));
-
+  std::cout << prefix << std::endl;
   // Read optional command-line parameters (e.g., enable visualizer with ./waf --run=<> --visualize
-  CommandLine cmd;
-  cmd.Parse(argc, argv);
+ // CommandLine cmd;
+ // cmd.Parse(argc, argv);
 
   // Creating nodes
   NodeContainer nodes;
@@ -154,7 +169,7 @@ main(int argc, char* argv[])
 
   
   PointToPointHelper bottleneckLink;
-  bottleneckLink.SetDeviceAttribute ("DataRate", StringValue ("100Mbps"));
+  bottleneckLink.SetDeviceAttribute ("DataRate", StringValue ("10Mbps"));
   bottleneckLink.SetChannelAttribute("Delay", StringValue("20ms"));
   bottleneckLink.SetQueue("ns3::DropTailQueue","MaxSize", StringValue ("100p"));
 
@@ -224,7 +239,7 @@ main(int argc, char* argv[])
 
   tchProducerLink.Install(devicesProducerLink);
 
-  tchBottleneckLink.Install(devicesBottleneckLink);
+  QueueDiscContainer qdiscs =  tchBottleneckLink.Install(devicesBottleneckLink);
 
  // Ptr<TrafficControlLayer> tc = devicesConsumerLink.Get(0)->GetNode ()->GetObject<TrafficControlLayer> ();
  // tc->ScanDevices();
@@ -276,12 +291,16 @@ main(int argc, char* argv[])
  // tch.AddInternalQueues(qdhandle1, 2, "ns3::DropTailQueue","MaxSize",StringValue("100p"));
 
 
-  //QueueDiscContainer qdiscs = tchBottleneckLink.Install (devices);
+  std::cout << qdiscs.GetN() << std::endl;
+  Ptr<QueueDisc> q = qdiscs.Get (0);
+  q->TraceConnectWithoutContext ("PacketsInQueue", MakeCallback (&TcPacketsInQueueTrace));
+  Config::ConnectWithoutContext ("/NodeList/2/$ns3::TrafficControlLayer/RootQueueDiscList/0/SojournTime",
+                                 MakeCallback (&SojournTimeTrace));
+  Ptr<QueueDisc> q2 = qdiscs.Get (1);
+  q2->TraceConnectWithoutContext ("PacketsInQueue", MakeCallback (&TcPacketsInQueueTrace));
+  Config::ConnectWithoutContext ("/NodeList/3/$ns3::TrafficControlLayer/RootQueueDiscList/0/SojournTime",
+                                 MakeCallback (&SojournTimeTrace));
 
-  //Ptr<QueueDisc> q = qdiscs.Get (3);
-  //q->TraceConnectWithoutContext ("PacketsInQueue", MakeCallback (&TcPacketsInQueueTrace));
-  //Config::ConnectWithoutContext ("/NodeList/1/$ns3::TrafficControlLayer/RootQueueDiscList/0/SojournTime",
-  //                               MakeCallback (&SojournTimeTrace));
 
   //Ptr<NetDevice> nd = devices.Get(3);
   //Ptr<PointToPointNetDevice> ptpnd = DynamicCast<PointToPointNetDevice>(nd);
@@ -315,26 +334,42 @@ main(int argc, char* argv[])
   // Installing applications
 
   // Consumer
-  ndn::AppHelper consumerHelper("ns3::ndn::ConsumerCbr");
+  //ndn::AppHelper consumerHelper("ns3::ndn::ConsumerCbr");
   // Consumer will request /prefix/0, /prefix/1, ...
-  consumerHelper.SetPrefix("/prefix");
-  consumerHelper.SetAttribute("Frequency", StringValue("1")); //  interests a second
-  
-  auto apps = consumerHelper.Install(nodes.Get(0));                        // first node
-  apps.Stop(Seconds(10.0)); // stop the consumer app at 10 seconds mark
-  
-  ndn::AppHelper prioConsumerHelper("ns3::ndn::ConsumerCbr");
-  prioConsumerHelper.SetPrefix("/prio");
-  prioConsumerHelper.SetAttribute("Frequency", StringValue("1")); 
-  
-  auto prioapps = prioConsumerHelper.Install(nodes.Get(0));
-  prioapps.Stop(Seconds(10.0));
- 
-  auto prioapps2 = prioConsumerHelper.Install(nodes.Get(4));
-  prioapps2.Stop(Seconds(10.0));
+  //consumerHelper.SetPrefix("/prefix");
+  //consumerHelper.SetAttribute("Frequency", StringValue("300")); //  interests a second
+   
+  ndn::AppHelper consumerHelperN4("ns3::ndn::ConsumerCbr");
+  consumerHelperN4.SetPrefix("/prefix/n4");
+  consumerHelperN4.SetAttribute("Frequency", StringValue(std::to_string(0.5*std_prefix_rate))); //  interests a second
 
-  auto prioapps3 = prioConsumerHelper.Install(nodes.Get(6));
-  prioapps3.Stop(Seconds(10.0));
+  ndn::AppHelper consumerHelperN6("ns3::ndn::ConsumerCbr");
+  consumerHelperN6.SetPrefix("/prefix/n6");
+  consumerHelperN6.SetAttribute("Frequency", StringValue(std::to_string(std_prefix_rate))); //  interests a second
+
+  //ndn::AppHelper prioConsumerHelper("ns3::ndn::ConsumerCbr");
+  //prioConsumerHelper.SetPrefix("/prio");
+  //prioConsumerHelper.SetAttribute("Frequency", StringValue("3000")); 
+
+  ndn::AppHelper prioConsumerHelperN0("ns3::ndn::ConsumerCbr");
+  prioConsumerHelperN0.SetPrefix("/prio/n0");
+  prioConsumerHelperN0.SetAttribute("Frequency", StringValue(std::to_string(prio_prefix_rate))); 
+
+  ndn::AppHelper prioConsumerHelperN4("ns3::ndn::ConsumerCbr");
+  prioConsumerHelperN4.SetPrefix("/prio/n4");
+  prioConsumerHelperN4.SetAttribute("Frequency", StringValue(std::to_string(0.5*prio_prefix_rate))); 
+  
+  auto prioappsN0 = prioConsumerHelperN0.Install(nodes.Get(0));
+  prioappsN0.Stop(Seconds(10.0));
+ 
+  auto prioappsN4 = prioConsumerHelperN4.Install(nodes.Get(4));
+  prioappsN4.Stop(Seconds(10.0));
+
+  auto appsN4 = consumerHelperN4.Install(nodes.Get(4));
+  appsN4.Stop(Seconds(10.0));
+
+  auto appsN6 = consumerHelperN6.Install(nodes.Get(6));
+  appsN6.Stop(Seconds(10.0));
 
   // Producer
   ndn::AppHelper producerHelper("ns3::ndn::Producer");
@@ -352,19 +387,19 @@ main(int argc, char* argv[])
   
 
   // Application-layer Latency tracer
-  ndn::AppDelayTracer::InstallAll("../"+prefix+"-app-delays-trace.txt");
-  ndn::AppDelayTracer::Install(nodes.Get(0), "../"+prefix+"app-delays-trace-n0.txt"); 
-  ndn::AppDelayTracer::Install(nodes.Get(4),"../"+prefix+"app-delays-trace-n4.txt");
-  ndn::AppDelayTracer::Install(nodes.Get(6),"../"+prefix+"app-delays-trace-n6.txt");
+  ndn::AppDelayTracer::InstallAll(out_dir+prefix+"-adt-all.txt");
+  ndn::AppDelayTracer::Install(nodes.Get(0),out_dir+prefix+"-adt-n0.txt"); 
+  ndn::AppDelayTracer::Install(nodes.Get(4),out_dir+prefix+"-adt-n4.txt");
+  ndn::AppDelayTracer::Install(nodes.Get(6),out_dir+prefix+"-adt-n6.txt");
 
 
-  PcapWriter trace("../"+prefix+"ndn-simple-trace-link.pcap");
+  PcapWriter trace(out_dir+prefix+"-ndn_sim.pcap");
   Config::ConnectWithoutContext("/NodeList/2/DeviceList/*/$ns3::PointToPointNetDevice/MacTx",
 		  MakeCallback(&PcapWriter::TracePacket, &trace));
   Config::ConnectWithoutContext("/NodeList/2/DeviceList/*/$ns3::PointToPointNetDevice/MacRx",
 		  MakeCallback(&PcapWriter::TracePacket, &trace));
 
-  Simulator::Stop(Seconds(20.0));
+  Simulator::Stop(Seconds(10.0));
   std::cout << "Start the simulation" << std::endl;
   Simulator::Run();
   Simulator::Destroy();

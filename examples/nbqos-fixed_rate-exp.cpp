@@ -75,13 +75,13 @@ namespace ns3 {
 void
 	TcPacketsInQueueTrace (uint32_t oldValue, uint32_t newValue)
 	{
-		  std::cout << Simulator::Now() << " TcPacketsInQueue " << oldValue << " to " << newValue << std::endl;
+		  std::cout << Simulator::Now() << ", TcPacketsInQueue, " << oldValue << " to " << newValue << std::endl;
 	}
 
 void
 	DevicePacketsInQueueTrace (uint32_t oldValue, uint32_t newValue)
 	{
-		  std::cout << Simulator::Now() << " DevicePacketsInQueue " << oldValue << " to " << newValue << std::endl;
+		  std::cout << Simulator::Now() << ", DevicePacketsInQueue, " << oldValue << " to " << newValue << std::endl;
 	}
 
 void 
@@ -96,7 +96,7 @@ void
 void
         SojournTimeTrace (Time sojournTime)
         {
-                  std::cout << "Sojourn time " << sojournTime.ToDouble (Time::MS) << "ms" << std::endl;
+                  std::cout << Simulator::Now() << ", Sojourn time, " << sojournTime.ToDouble (Time::MS) << "ms" << std::endl;
         }
 
 int
@@ -130,6 +130,12 @@ main(int argc, char* argv[])
   prefix.append("-"+std::to_string(run_num));
   prefix.append("-"+std::to_string(std_prefix_rate)+"_std_pps");
   prefix.append("-"+std::to_string(prio_prefix_rate)+"_prio_pps");
+
+  if(out_dir.back() != '/'){
+    out_dir.append("/");
+  }
+
+
   // setting default parameters for PointToPoint links and channels
   Config::SetDefault("ns3::PointToPointNetDevice::DataRate", StringValue("2.0Mbps"));
   Config::SetDefault("ns3::PointToPointChannel::Delay", StringValue("20ms"));
@@ -229,15 +235,25 @@ main(int argc, char* argv[])
 
 //  tchBottleneckLink.AddInternalQueues(tchBottleneckLinkHandle, 2, "ns3::DropTailQueue","MaxSize",StringValue("100p")); 
 
+  std::cout << "setting up links" << std::endl;
 
   NetDeviceContainer devicesConsumerLink = consumerLink.Install (nodes.Get(0),nodes.Get(1));
   devicesConsumerLink.Add(consumerLink.Install (nodes.Get(4),nodes.Get(1)));
 
+  std::cout << "Consumer links NetDevice Count:" << devicesConsumerLink.GetN() << std::endl;
+
   NetDeviceContainer devicesProducerLink = producerLink.Install (nodes.Get(3),nodes.Get(2));
   devicesProducerLink.Add( producerLink.Install(nodes.Get(5),nodes.Get(2)));
 
+  std::cout << "Producer links NetDevice Count:" << devicesProducerLink.GetN() << std::endl;
+
   NetDeviceContainer devicesBottleneckLink = bottleneckLink.Install (nodes.Get(1),nodes.Get(2));
+
+  std::cout << "Bottleneck link NetDevice Count:" << devicesBottleneckLink.GetN() << std::endl;
+  
   std::cout << "links created" << std::endl;
+
+
   // Install NDN stack on all nodes
   ndn::StackHelper ndnHelper;
   ndnHelper.SetDefaultRoutes(true);
@@ -287,9 +303,10 @@ main(int argc, char* argv[])
  // tch.AddInternalQueues(qdhandle0, 2, "ns3::DropTailQueue","MaxSize",StringValue("100p"));
  // tch.AddInternalQueues(qdhandle1, 2, "ns3::DropTailQueue","MaxSize",StringValue("100p"));
 
-  std::cout<<"setting up queue telem"<<std::endl;
-  std::cout << qdiscs.GetN() << std::endl;
+  std::cout << "setting up queue telem " << std::endl;
+  std::cout << "qdiscs.GetN() = "<<qdiscs.GetN() << std::endl;
   Ptr<QueueDisc> q = qdiscs.Get (0);
+  std::cout << "q0: " << q->GetTypeId().GetName() << std::endl;
   q->TraceConnectWithoutContext ("PacketsInQueue", MakeCallback (&TcPacketsInQueueTrace));
   Config::ConnectWithoutContext ("/NodeList/1/$ns3::TrafficControlLayer/RootQueueDiscList/0/SojournTime",
                                  MakeCallback (&SojournTimeTrace));
@@ -350,13 +367,14 @@ main(int argc, char* argv[])
   prioConsumerHelperN0.SetPrefix(streaming_service_a+"/live/formula1");
   prioConsumerHelperN0.SetAttribute("Frequency", StringValue(std::to_string(prio_prefix_rate))); 
 
-  
-  auto prioappsN0 = prioConsumerHelperN0.Install(nodes.Get(0));
-  prioappsN0.Stop(Seconds(10.0));
-
-  auto appsN4 = consumerHelperN4.Install(nodes.Get(4));
-  appsN4.Stop(Seconds(10.0));
-
+  if(prio_prefix_rate > 0) {
+    auto prioappsN0 = prioConsumerHelperN0.Install(nodes.Get(0));
+    prioappsN0.Stop(Seconds(10.0));
+  }
+  if(std_prefix_rate >0) {
+    auto appsN4 = consumerHelperN4.Install(nodes.Get(4));
+    appsN4.Stop(Seconds(10.0));
+  }
 
   // Producer
   ndn::AppHelper producerHelper("ns3::ndn::Producer");
@@ -405,6 +423,17 @@ main(int argc, char* argv[])
 		  MakeCallback(&PcapWriter::TracePacket, &traceN5));
 
 
+  PcapWriter traceN2(out_dir+"/"+prefix+"-ndn_sim_n2.pcap");
+  Config::ConnectWithoutContext("/NodeList/2/DeviceList/*/$ns3::PointToPointNetDevice/MacTx",
+		                MakeCallback(&PcapWriter::TracePacket, &traceN2));
+  Config::ConnectWithoutContext("/NodeList/2/DeviceList/*/$ns3::PointToPointNetDevice/MacRx",
+			        MakeCallback(&PcapWriter::TracePacket, &traceN2));
+  
+  PcapWriter traceN1(out_dir+"/"+prefix+"-ndn_sim_n1.pcap");
+  Config::ConnectWithoutContext("/NodeList/1/DeviceList/*/$ns3::PointToPointNetDevice/MacTx",
+				MakeCallback(&PcapWriter::TracePacket, &traceN1));
+  Config::ConnectWithoutContext("/NodeList/1/DeviceList/*/$ns3::PointToPointNetDevice/MacRx",
+			        MakeCallback(&PcapWriter::TracePacket, &traceN1));
 
   Simulator::Stop(Seconds(10.0));
   std::cout << "Start the simulation" << std::endl;

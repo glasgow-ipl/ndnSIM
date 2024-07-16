@@ -31,6 +31,9 @@
 #include "ns3/traffic-control-module.h"
 #include "ns3/flow-monitor-module.h"
 
+#include "ns3/config-store-module.h"
+
+
 namespace ns3 {
 
 /**
@@ -75,8 +78,15 @@ namespace ns3 {
 void
 	TcPacketsInQueueTrace (uint32_t oldValue, uint32_t newValue)
 	{
-		  std::cout << Simulator::Now() << ", TcPacketsInQueue, " << oldValue << " to " << newValue << std::endl;
+		  std::cout << "TcPktsInQueue," << Simulator::Now() << ", TcPacketsInQueue1, " << oldValue << "," << newValue << std::endl;
 	}
+
+void
+	TcPacketsInQueueTrace2 (uint32_t oldValue, uint32_t newValue)
+	{
+		  std::cout << "TcPktsInQueue," << Simulator::Now() << ", TcPacketsInQueue2, " << oldValue << "," << newValue << std::endl;
+	}
+
 
 void
 	DevicePacketsInQueueTrace (uint32_t oldValue, uint32_t newValue)
@@ -307,11 +317,17 @@ main(int argc, char* argv[])
   std::cout << "qdiscs.GetN() = "<<qdiscs.GetN() << std::endl;
   Ptr<QueueDisc> q = qdiscs.Get (0);
   std::cout << "q0: " << q->GetTypeId().GetName() << std::endl;
-  q->TraceConnectWithoutContext ("PacketsInQueue", MakeCallback (&TcPacketsInQueueTrace));
+  //q->TraceConnectWithoutContext ("PacketsInQueue", MakeCallback (&TcPacketsInQueueTrace));
+  //$ns3::NodeListPriv/NodeList/1/$ns3::Node/$ns3::TrafficControlLayer/RootQueueDiscList/1/$ns3::PrioQueueDisc/QueueDiscClassList/0/$ns3::QueueDiscClass/QueueDisc/$ns3::FifoQueueDisc/InternalQueueList/0/
+  Config::ConnectWithoutContext ("/NodeList/2/$ns3::TrafficControlLayer/RootQueueDiscList/0/$ns3::PrioQueueDisc/QueueDiscClassList/0/$ns3::QueueDiscClass/QueueDisc/$ns3::FifoQueueDisc/InternalQueueList/0/PacketsInQueue",MakeCallback(&TcPacketsInQueueTrace));
+  Config::ConnectWithoutContext ("/NodeList/2/$ns3::TrafficControlLayer/RootQueueDiscList/0/$ns3::PrioQueueDisc/QueueDiscClassList/1/$ns3::QueueDiscClass/QueueDisc/$ns3::FifoQueueDisc/InternalQueueList/0/PacketsInQueue",MakeCallback(&TcPacketsInQueueTrace2));
+
+//Config::ConnectWithoutContext ("/NodeList/1/$ns3::TrafficControlLayer/RootQueueDiscList/0/InternalQueueList/1",MakeCallback(&TcPacketsInQueueTrace2));
+
   Config::ConnectWithoutContext ("/NodeList/1/$ns3::TrafficControlLayer/RootQueueDiscList/0/SojournTime",
                                  MakeCallback (&SojournTimeTrace));
   Ptr<QueueDisc> q2 = qdiscs.Get (1);
-  q2->TraceConnectWithoutContext ("PacketsInQueue", MakeCallback (&TcPacketsInQueueTrace));
+  //q2->TraceConnectWithoutContext ("PacketsInQueue", MakeCallback (&TcPacketsInQueueTrace2));
   Config::ConnectWithoutContext ("/NodeList/2/$ns3::TrafficControlLayer/RootQueueDiscList/0/SojournTime",
                                  MakeCallback (&SojournTimeTrace));
 
@@ -423,19 +439,28 @@ main(int argc, char* argv[])
 		  MakeCallback(&PcapWriter::TracePacket, &traceN5));
 
 
-  PcapWriter traceN2(out_dir+"/"+prefix+"-ndn_sim_n2.pcap");
+  PcapWriter traceN2(out_dir+prefix+"-ndn_sim_n2.pcap");
   Config::ConnectWithoutContext("/NodeList/2/DeviceList/*/$ns3::PointToPointNetDevice/MacTx",
 		                MakeCallback(&PcapWriter::TracePacket, &traceN2));
   Config::ConnectWithoutContext("/NodeList/2/DeviceList/*/$ns3::PointToPointNetDevice/MacRx",
 			        MakeCallback(&PcapWriter::TracePacket, &traceN2));
   
-  PcapWriter traceN1(out_dir+"/"+prefix+"-ndn_sim_n1.pcap");
+  PcapWriter traceN1(out_dir+prefix+"-ndn_sim_n1.pcap");
   Config::ConnectWithoutContext("/NodeList/1/DeviceList/*/$ns3::PointToPointNetDevice/MacTx",
 				MakeCallback(&PcapWriter::TracePacket, &traceN1));
   Config::ConnectWithoutContext("/NodeList/1/DeviceList/*/$ns3::PointToPointNetDevice/MacRx",
 			        MakeCallback(&PcapWriter::TracePacket, &traceN1));
 
   Simulator::Stop(Seconds(10.0));
+
+  std::String ConfigOutputPath = out_dir+prefix+"-output-attributes.txt"
+
+  Config::SetDefault ("ns3::ConfigStore::Filename", StringValue(ConfigOutputPath));
+  Config::SetDefault ("ns3::ConfigStore::FileFormat", StringValue("RawText"));
+  Config::SetDefault("ns3::ConfigStore::Mode",StringValue("Save"));
+  ConfigStore outputConfig2;
+  outputConfig2.ConfigureAttributes();
+
   std::cout << "Start the simulation" << std::endl;
   Simulator::Run();
   Simulator::Destroy();

@@ -78,22 +78,54 @@ namespace ns3 {
 void
 	TcPacketsInQueueTrace (uint32_t oldValue, uint32_t newValue)
 	{
-		  std::cout << "TcPktsInQueue," << Simulator::Now() << ", TcPacketsInQueue1, " << oldValue << "," << newValue << std::endl;
+		  std::cout << "TcPktsInQueue," << Simulator::Now() << ", TcPacketsInQueue0, " << oldValue << "," << newValue << std::endl;
 	}
 
 void
 	TcPacketsInQueueTrace2 (uint32_t oldValue, uint32_t newValue)
 	{
-		  std::cout << "TcPktsInQueue," << Simulator::Now() << ", TcPacketsInQueue2, " << oldValue << "," << newValue << std::endl;
+		  std::cout << "TcPktsInQueue," << Simulator::Now() << ", TcPacketsInQueue1, " << oldValue << "," << newValue << std::endl;
 	}
+
+void
+	TcDropTraceN2Q0(Ptr<const ns3::QueueDiscItem> pkt)
+	{
+		std::cout << "TcDropTrace," << Simulator::Now() << ", TcDropTraceN2Q0, " << "drop" << std::endl;
+	}
+void
+	TcDropTraceN2Q1(Ptr<const ns3::QueueDiscItem> pkt)
+	{
+		std::cout << "TcDropTrace," << Simulator::Now() << ", TcDropTraceN2Q1, " << "drop" << std::endl;
+	}
+
+void
+	QDiscDropTrace(Ptr<const ns3::QueueDiscItem> pkt)
+	{
+		std::cout << "QDiscDropTrace," << Simulator::Now() << ", QDiscDropTraceN2Root, " << "drop" << std::endl;
+	}
+void
+	ChildQDiscDropTrace(Ptr<const ns3::QueueDiscItem> pkt)
+	{
+		std::cout << "ChildQDiscDropTrace," << Simulator::Now() << ", QDiscDropTraceN2Child0, " << "drop" << std::endl;
+	}
+void
+	ChildQDiscDropTrace1(Ptr<const ns3::QueueDiscItem> pkt)
+	{
+		std::cout << "ChildQDiscDropTrace," << Simulator::Now() << ", QDiscDropTraceN2Child1, " << "drop" << std::endl;
+	}
+
 
 
 void
 	DevicePacketsInQueueTrace (uint32_t oldValue, uint32_t newValue)
 	{
-		  std::cout << Simulator::Now() << ", DevicePacketsInQueue, " << oldValue << " to " << newValue << std::endl;
+	        std::cout << "DevicePacketsInQueue," << Simulator::Now() << ", DevicePacketsInQueueN2, " << oldValue << "," << newValue << std::endl;
 	}
-
+void
+	DeviceDropTraceN2(Ptr<const ns3::Packet> pkt)
+	{
+		std::cout << "DevDropTrace," << Simulator::Now() << ", DevDropTraceN2, " << "drop" << std::endl;
+	}
 void 
 	CreateAndAggregateObjectFromTypeId (Ptr<Node> node, const std::string typeId)
 	{
@@ -106,8 +138,20 @@ void
 void
         SojournTimeTrace (Time sojournTime)
         {
-                  std::cout << Simulator::Now() << ", Sojourn time, " << sojournTime.ToDouble (Time::MS) << "ms" << std::endl;
+                  std::cout << "SojournTimeTrace,"<<Simulator::Now() << ",RootQueueDisc, " << sojournTime.ToDouble (Time::MS) << "ms" << std::endl;
         }
+void
+        SojournTimeTraceC0 (Time sojournTime)
+        {
+                  std::cout << "SojournTimeTrace,"<<Simulator::Now() << ",ChildQueueDisc0, " << sojournTime.ToDouble (Time::MS) << "ms" << std::endl;
+        }
+void
+        SojournTimeTraceC1 (Time sojournTime)
+        {
+                  std::cout << "SojournTimeTrace,"<<Simulator::Now() << ",ChildQueueDisc1, " << sojournTime.ToDouble (Time::MS) << "ms" << std::endl;
+        }
+
+
 
 int
 main(int argc, char* argv[])
@@ -122,34 +166,56 @@ main(int argc, char* argv[])
   string exp_name = "ndn-prioqueue-small";
   uint32_t std_prefix_rate = 300; //default 300 pps
   uint32_t prio_prefix_rate = 300; //default 300 pps
-  uint32_t queueSize=10;
+  uint32_t std_payload_size = 1024;
+  uint32_t prio_payload_size = 1024; //default 1024 Bytes
+  uint32_t ndQueueSize=5;
+  uint32_t q_disc_size=100;
   string out_dir = "./";
   uint64_t run_num = 1; //defaut run number
+  double duration = 10.0; 
 
   CommandLine cmd (__FILE__);
   cmd.AddValue("stdPRate", "Standard packet rate (pps) per app instance", std_prefix_rate);
   cmd.AddValue("prioPRate", "Prioritised packet rate (pps) per app instance", prio_prefix_rate);
+  cmd.AddValue("stdPSize", "Standard packet data payload size per app instance", std_payload_size);
+  cmd.AddValue("prioPSize", "Prioritised packet data payload size per app instance", prio_payload_size);
   cmd.AddValue("outDir", "Output directory",out_dir);
   cmd.AddValue("expName", "Experiment name override", exp_name);
   cmd.AddValue("runNum", "NS3 Run Number",run_num);
   cmd.AddValue("date","Date string override",date);
+  cmd.AddValue("ndQueueSize", "NetDeviceQueueSize",ndQueueSize);
+  cmd.AddValue("QDiscSize", "QueueDisc child queue size",q_disc_size);
+  cmd.AddValue("duration", "Duration of the experiment",duration);
   cmd.Parse(argc,argv);
   ns3::RngSeedManager::SetRun(run_num); 
   prefix.append(date);
   prefix.append("-"+exp_name);
+  prefix.append("-"+std::to_string(duration)+"sec");
   prefix.append("-"+std::to_string(run_num));
   prefix.append("-"+std::to_string(std_prefix_rate)+"_std_pps");
   prefix.append("-"+std::to_string(prio_prefix_rate)+"_prio_pps");
+  prefix.append("-"+std::to_string(std_payload_size)+"_std_bytes");
+  prefix.append("-"+std::to_string(prio_payload_size)+"_prio_bytes");
+  prefix.append("-"+std::to_string(ndQueueSize)+"_NDqueuePkts");
+  prefix.append("-"+std::to_string(q_disc_size)+"_QDiscPkts");
 
   if(out_dir.back() != '/'){
     out_dir.append("/");
   }
 
+  std::string ndQueueSize_str=std::to_string(ndQueueSize);
+  ndQueueSize_str.append("p");
+
+  std::string q_disc_size_str=std::to_string(q_disc_size);
+  q_disc_size_str.append("p");
+
+  std::string std_payload_size_str=std::to_string(std_payload_size);
+  std::string prio_payload_size_str=std::to_string(prio_payload_size);
 
   // setting default parameters for PointToPoint links and channels
   Config::SetDefault("ns3::PointToPointNetDevice::DataRate", StringValue("2.0Mbps"));
   Config::SetDefault("ns3::PointToPointChannel::Delay", StringValue("20ms"));
-  Config::SetDefault("ns3::DropTailQueue<Packet>::MaxSize", StringValue("20p"));
+  //Config::SetDefault("ns3::DropTailQueue<Packet>::MaxSize", StringValue("20p"));
   // Devices queue configuration
   //Config::SetDefault ("ns3::DropTailQueue<Packet>::MaxSize",
                        //QueueSizeValue (QueueSize (QueueSizeUnit::PACKETS, queueSize)));
@@ -181,19 +247,19 @@ main(int argc, char* argv[])
   PointToPointHelper consumerLink;
   consumerLink.SetDeviceAttribute ("DataRate", StringValue ("1Gbps"));
   consumerLink.SetChannelAttribute("Delay", StringValue("2ms"));
-  consumerLink.SetQueue("ns3::DropTailQueue","MaxSize", StringValue ("100p"));
+  consumerLink.SetQueue("ns3::DropTailQueue","MaxSize", StringValue (ndQueueSize_str));
 
   
   PointToPointHelper bottleneckLink;
   bottleneckLink.SetDeviceAttribute ("DataRate", StringValue ("10Mbps"));
   bottleneckLink.SetChannelAttribute("Delay", StringValue("20ms"));
-  bottleneckLink.SetQueue("ns3::DropTailQueue","MaxSize", StringValue ("100p"));
+  bottleneckLink.SetQueue("ns3::DropTailQueue","MaxSize", StringValue (ndQueueSize_str));
 
 
   PointToPointHelper producerLink;
   producerLink.SetDeviceAttribute ("DataRate", StringValue ("1Gbps"));
   producerLink.SetChannelAttribute("Delay", StringValue("2ms"));
-  producerLink.SetQueue("ns3::DropTailQueue","MaxSize", StringValue ("100p"));
+  producerLink.SetQueue("ns3::DropTailQueue","MaxSize", StringValue (ndQueueSize_str));
 
 // devices = p2p.Install(nodes.Get(0), nodes.Get(1));
  //devices.Add(p2p.Install(nodes.Get(1), nodes.Get(2)));
@@ -211,8 +277,8 @@ main(int argc, char* argv[])
   uint16_t consumerQdhandle1 = tchConsumerLink.AddChildQueueDisc(tchConsumerLinkHandle,cidConsumerLink[1], "ns3::FifoQueueDisc");
   tchConsumerLink.AddPacketFilter(tchConsumerLinkHandle,"ns3::ndn::NdnPacketFilter");
   
-  tchConsumerLink.AddInternalQueues(consumerQdhandle0, 1, "ns3::DropTailQueue","MaxSize",StringValue("100p"));
-  tchConsumerLink.AddInternalQueues(consumerQdhandle1, 1, "ns3::DropTailQueue","MaxSize",StringValue("100p"));
+  tchConsumerLink.AddInternalQueues(consumerQdhandle0, 1, "ns3::DropTailQueue","MaxSize",StringValue(q_disc_size_str));
+  tchConsumerLink.AddInternalQueues(consumerQdhandle1, 1, "ns3::DropTailQueue","MaxSize",StringValue(q_disc_size_str));
   
   //tchConsumerLink.AddInternalQueues(tchConsumerLinkHandle, 2, "ns3::DropTailQueue","MaxSize",StringValue("100p")); 
  
@@ -225,8 +291,8 @@ main(int argc, char* argv[])
   uint16_t producerQdhandle1 = tchProducerLink.AddChildQueueDisc(tchProducerLinkHandle,cidProducerLink[1], "ns3::FifoQueueDisc");
   tchProducerLink.AddPacketFilter(tchProducerLinkHandle,"ns3::ndn::NdnPacketFilter");
   
-  tchProducerLink.AddInternalQueues(producerQdhandle0, 1, "ns3::DropTailQueue","MaxSize",StringValue("100p"));
-  tchProducerLink.AddInternalQueues(producerQdhandle1, 1, "ns3::DropTailQueue","MaxSize",StringValue("100p"));
+  tchProducerLink.AddInternalQueues(producerQdhandle0, 1, "ns3::DropTailQueue","MaxSize",StringValue(q_disc_size_str));
+  tchProducerLink.AddInternalQueues(producerQdhandle1, 1, "ns3::DropTailQueue","MaxSize",StringValue(q_disc_size_str));
 
  // tchProducerLink.AddInternalQueues(tchProducerLinkHandle, 2, "ns3::DropTailQueue","MaxSize",StringValue("100p")); 
 
@@ -240,9 +306,11 @@ main(int argc, char* argv[])
   uint16_t bottleneckQdhandle1 = tchBottleneckLink.AddChildQueueDisc(tchBottleneckLinkHandle,cidBottleneckLink[1], "ns3::FifoQueueDisc");
   tchBottleneckLink.AddPacketFilter(tchBottleneckLinkHandle,"ns3::ndn::NdnPacketFilter");
   
-  tchBottleneckLink.AddInternalQueues(bottleneckQdhandle0, 1, "ns3::DropTailQueue","MaxSize",StringValue("100p"));
-  tchBottleneckLink.AddInternalQueues(bottleneckQdhandle1, 1, "ns3::DropTailQueue","MaxSize",StringValue("100p"));
+  tchBottleneckLink.AddInternalQueues(bottleneckQdhandle0, 1, "ns3::DropTailQueue","MaxSize",StringValue(q_disc_size_str));
+  tchBottleneckLink.AddInternalQueues(bottleneckQdhandle1, 1, "ns3::DropTailQueue","MaxSize",StringValue(q_disc_size_str));
+  
 
+  //tchBottleneckLink.SetQueueLimits("ns3::DynamicQueueLimits", "HoldTime", StringValue ("4ms"));
 //  tchBottleneckLink.AddInternalQueues(tchBottleneckLinkHandle, 2, "ns3::DropTailQueue","MaxSize",StringValue("100p")); 
 
   std::cout << "setting up links" << std::endl;
@@ -319,19 +387,34 @@ main(int argc, char* argv[])
   std::cout << "q0: " << q->GetTypeId().GetName() << std::endl;
   //q->TraceConnectWithoutContext ("PacketsInQueue", MakeCallback (&TcPacketsInQueueTrace));
   //$ns3::NodeListPriv/NodeList/1/$ns3::Node/$ns3::TrafficControlLayer/RootQueueDiscList/1/$ns3::PrioQueueDisc/QueueDiscClassList/0/$ns3::QueueDiscClass/QueueDisc/$ns3::FifoQueueDisc/InternalQueueList/0/
-  Config::ConnectWithoutContext ("/NodeList/2/$ns3::TrafficControlLayer/RootQueueDiscList/0/$ns3::PrioQueueDisc/QueueDiscClassList/0/$ns3::QueueDiscClass/QueueDisc/$ns3::FifoQueueDisc/InternalQueueList/0/PacketsInQueue",MakeCallback(&TcPacketsInQueueTrace));
-  Config::ConnectWithoutContext ("/NodeList/2/$ns3::TrafficControlLayer/RootQueueDiscList/0/$ns3::PrioQueueDisc/QueueDiscClassList/1/$ns3::QueueDiscClass/QueueDisc/$ns3::FifoQueueDisc/InternalQueueList/0/PacketsInQueue",MakeCallback(&TcPacketsInQueueTrace2));
+  Config::ConnectWithoutContext ("/NodeList/2/$ns3::TrafficControlLayer/RootQueueDiscList/2/$ns3::PrioQueueDisc/QueueDiscClassList/0/$ns3::QueueDiscClass/QueueDisc/$ns3::FifoQueueDisc/InternalQueueList/0/PacketsInQueue",MakeCallback(&TcPacketsInQueueTrace));
+  Config::ConnectWithoutContext ("/NodeList/2/$ns3::TrafficControlLayer/RootQueueDiscList/2/$ns3::PrioQueueDisc/QueueDiscClassList/1/$ns3::QueueDiscClass/QueueDisc/$ns3::FifoQueueDisc/InternalQueueList/0/PacketsInQueue",MakeCallback(&TcPacketsInQueueTrace2));
+  Config::ConnectWithoutContext ("/NodeList/2/$ns3::TrafficControlLayer/RootQueueDiscList/2/$ns3::PrioQueueDisc/QueueDiscClassList/0/$ns3::QueueDiscClass/QueueDisc/$ns3::FifoQueueDisc/InternalQueueList/0/Drop",
+                                 MakeCallback (&TcDropTraceN2Q0));
+  Config::ConnectWithoutContext ("/NodeList/2/$ns3::TrafficControlLayer/RootQueueDiscList/2/$ns3::PrioQueueDisc/QueueDiscClassList/1/$ns3::QueueDiscClass/QueueDisc/$ns3::FifoQueueDisc/InternalQueueList/0/Drop",
+                                 MakeCallback (&TcDropTraceN2Q1));
+
+  Config::ConnectWithoutContext ("/NodeList/2/$ns3::TrafficControlLayer/RootQueueDiscList/2/$ns3::PrioQueueDisc/Drop",MakeCallback(&QDiscDropTrace));
+  Config::ConnectWithoutContext ("/NodeList/2/$ns3::TrafficControlLayer/RootQueueDiscList/2/$ns3::PrioQueueDisc/QueueDiscClassList/0/$ns3::QueueDiscClass/QueueDisc/$ns3::FifoQueueDisc/Drop",MakeCallback(&ChildQDiscDropTrace));
+  Config::ConnectWithoutContext ("/NodeList/2/$ns3::TrafficControlLayer/RootQueueDiscList/2/$ns3::PrioQueueDisc/QueueDiscClassList/1/$ns3::QueueDiscClass/QueueDisc/$ns3::FifoQueueDisc/Drop",MakeCallback(&ChildQDiscDropTrace1));
+
 
 //Config::ConnectWithoutContext ("/NodeList/1/$ns3::TrafficControlLayer/RootQueueDiscList/0/InternalQueueList/1",MakeCallback(&TcPacketsInQueueTrace2));
 
-  Config::ConnectWithoutContext ("/NodeList/1/$ns3::TrafficControlLayer/RootQueueDiscList/0/SojournTime",
+  Config::ConnectWithoutContext ("/NodeList/2/$ns3::TrafficControlLayer/RootQueueDiscList/2/SojournTime",
                                  MakeCallback (&SojournTimeTrace));
+  Config::ConnectWithoutContext ("/NodeList/2/$ns3::TrafficControlLayer/RootQueueDiscList/2/$ns3::PrioQueueDisc/QueueDiscClassList/0/$ns3::QueueDiscClass/QueueDisc/$ns3::FifoQueueDisc/SojournTime",MakeCallback(&SojournTimeTraceC0));
+  Config::ConnectWithoutContext ("/NodeList/2/$ns3::TrafficControlLayer/RootQueueDiscList/2/$ns3::PrioQueueDisc/QueueDiscClassList/1/$ns3::QueueDiscClass/QueueDisc/$ns3::FifoQueueDisc/SojournTime",MakeCallback(&SojournTimeTraceC1));
+
   Ptr<QueueDisc> q2 = qdiscs.Get (1);
   //q2->TraceConnectWithoutContext ("PacketsInQueue", MakeCallback (&TcPacketsInQueueTrace2));
-  Config::ConnectWithoutContext ("/NodeList/2/$ns3::TrafficControlLayer/RootQueueDiscList/0/SojournTime",
-                                 MakeCallback (&SojournTimeTrace));
+  Config::ConnectWithoutContext ("/NodeList/2/$ns3::Node/DeviceList/2/$ns3::PointToPointNetDevice/TxQueue/PacketsInQueue",
+                                 MakeCallback (&DevicePacketsInQueueTrace));
+  Config::ConnectWithoutContext ("/NodeList/2/$ns3::Node/DeviceList/2/$ns3::PointToPointNetDevice/TxQueue/Drop",
+                                 MakeCallback (&DeviceDropTraceN2));
 
 
+  //Config::ConnectWithoutContext ("
   //Ptr<NetDevice> nd = devices.Get(3);
   //Ptr<PointToPointNetDevice> ptpnd = DynamicCast<PointToPointNetDevice>(nd);
   //Ptr<Queue<Packet> > queue = ptpnd->GetQueue();
@@ -371,7 +454,7 @@ main(int argc, char* argv[])
   //consumerHelper.SetAttribute("Frequency", StringValue("300")); //  interests a second
    
   ndn::AppHelper consumerHelperN4("ns3::ndn::ConsumerCbr");
-  consumerHelperN4.SetPrefix(social_network_a+"/static");
+  consumerHelperN4.SetPrefix(social_network_a+"/resource/static");
   consumerHelperN4.SetAttribute("Frequency", StringValue(std::to_string(std_prefix_rate))); //  interests a second
 
 
@@ -385,25 +468,25 @@ main(int argc, char* argv[])
 
   if(prio_prefix_rate > 0) {
     auto prioappsN0 = prioConsumerHelperN0.Install(nodes.Get(0));
-    prioappsN0.Stop(Seconds(10.0));
+    prioappsN0.Stop(Seconds(duration));
   }
   if(std_prefix_rate >0) {
     auto appsN4 = consumerHelperN4.Install(nodes.Get(4));
-    appsN4.Stop(Seconds(10.0));
+    appsN4.Stop(Seconds(duration));
   }
 
   // Producer
   ndn::AppHelper producerHelper("ns3::ndn::Producer");
   // Producer will reply to all requests starting with /prefix
   producerHelper.SetPrefix(social_network_a);
-  producerHelper.SetAttribute("PayloadSize", StringValue("1024"));
+  producerHelper.SetAttribute("PayloadSize", StringValue(std_payload_size_str));
   producerHelper.Install(nodes.Get(3)); // last node
  
 // Producer
   ndn::AppHelper prioProducerHelper("ns3::ndn::Producer");
   // Producer will reply to all requests starting with /prefix
   prioProducerHelper.SetPrefix(streaming_service_a);
-  prioProducerHelper.SetAttribute("PayloadSize", StringValue("1024"));
+  prioProducerHelper.SetAttribute("PayloadSize", StringValue(prio_payload_size_str));
   prioProducerHelper.Install(nodes.Get(5)); // last node
   
 
@@ -439,11 +522,32 @@ main(int argc, char* argv[])
 		  MakeCallback(&PcapWriter::TracePacket, &traceN5));
 
 
-  PcapWriter traceN2(out_dir+prefix+"-ndn_sim_n2.pcap");
-  Config::ConnectWithoutContext("/NodeList/2/DeviceList/*/$ns3::PointToPointNetDevice/MacTx",
+  PcapWriter traceN2(out_dir+prefix+"-ndn_sim_n2-dev_2.pcap");
+  Config::ConnectWithoutContext("/NodeList/2/DeviceList/2/$ns3::PointToPointNetDevice/MacTx",
 		                MakeCallback(&PcapWriter::TracePacket, &traceN2));
-  Config::ConnectWithoutContext("/NodeList/2/DeviceList/*/$ns3::PointToPointNetDevice/MacRx",
+  Config::ConnectWithoutContext("/NodeList/2/DeviceList/2/$ns3::PointToPointNetDevice/MacRx",
 			        MakeCallback(&PcapWriter::TracePacket, &traceN2));
+  PcapWriter traceN2D2TX(out_dir+prefix+"-ndn_sim_n2-dev_2-tx.pcap");
+  Config::ConnectWithoutContext("/NodeList/2/DeviceList/2/$ns3::PointToPointNetDevice/MacTx",
+		                MakeCallback(&PcapWriter::TracePacket, &traceN2D2TX));
+
+  PcapWriter traceN2D1(out_dir+prefix+"-ndn_sim_n2-dev_1.pcap");
+  Config::ConnectWithoutContext("/NodeList/2/DeviceList/1/$ns3::PointToPointNetDevice/MacTx",
+		                MakeCallback(&PcapWriter::TracePacket, &traceN2D1));
+  Config::ConnectWithoutContext("/NodeList/2/DeviceList/1/$ns3::PointToPointNetDevice/MacRx",
+			        MakeCallback(&PcapWriter::TracePacket, &traceN2D1)); 
+  
+
+  PcapWriter traceN2D1rx(out_dir+prefix+"-ndn_sim_n2-dev_1-rx.pcap");
+  Config::ConnectWithoutContext("/NodeList/2/DeviceList/1/$ns3::PointToPointNetDevice/MacRx",
+			        MakeCallback(&PcapWriter::TracePacket, &traceN2D1rx));
+
+  PcapWriter traceN2D0(out_dir+prefix+"-ndn_sim_n2-dev_0.pcap");
+  Config::ConnectWithoutContext("/NodeList/2/DeviceList/0/$ns3::PointToPointNetDevice/MacTx",
+		                MakeCallback(&PcapWriter::TracePacket, &traceN2D0));
+  Config::ConnectWithoutContext("/NodeList/2/DeviceList/0/$ns3::PointToPointNetDevice/MacRx",
+			        MakeCallback(&PcapWriter::TracePacket, &traceN2D0)); 
+  
   
   PcapWriter traceN1(out_dir+prefix+"-ndn_sim_n1.pcap");
   Config::ConnectWithoutContext("/NodeList/1/DeviceList/*/$ns3::PointToPointNetDevice/MacTx",
@@ -451,9 +555,9 @@ main(int argc, char* argv[])
   Config::ConnectWithoutContext("/NodeList/1/DeviceList/*/$ns3::PointToPointNetDevice/MacRx",
 			        MakeCallback(&PcapWriter::TracePacket, &traceN1));
 
-  Simulator::Stop(Seconds(10.0));
+  Simulator::Stop(Seconds(duration));
 
-  std::String ConfigOutputPath = out_dir+prefix+"-output-attributes.txt"
+  std::string ConfigOutputPath = out_dir+prefix+"-output-attributes.txt";
 
   Config::SetDefault ("ns3::ConfigStore::Filename", StringValue(ConfigOutputPath));
   Config::SetDefault ("ns3::ConfigStore::FileFormat", StringValue("RawText"));

@@ -10,9 +10,10 @@ namespace ns3 {
 
   NS_LOG_COMPONENT_DEFINE("NdnQueueDiscItem");
 
-  NdnQueueDiscItem::NdnQueueDiscItem (Ptr<Packet> p, const Address& addr, uint16_t protocol, const BlockHeader &header, uint16_t fb_field = 0)
+  NdnQueueDiscItem::NdnQueueDiscItem (Ptr<Packet> p, const Address& addr, uint16_t protocol, const BlockHeader &header, uint16_t fb_field = 0, std::string name="")
     : QueueDiscItem (p, addr , protocol),
-    m_fb_field(fb_field)
+    m_fb_field(fb_field),
+    m_name(name)
   {
   }
 
@@ -43,6 +44,12 @@ namespace ns3 {
   {
     NS_LOG_FUNCTION(this);
     return this->m_fb_field;
+  }
+
+  std::string NdnQueueDiscItem::GetName(void) const
+  {
+    NS_LOG_FUNCTION(this);
+    return this->m_name;
   }
 
   void NdnQueueDiscItem::AddHeader(void)

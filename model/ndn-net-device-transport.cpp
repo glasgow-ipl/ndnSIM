@@ -130,7 +130,7 @@ NetDeviceTransport::doSend(const Block& packet)
                   << this->getLocalUri() << " to " << this->getRemoteUri());
 
   uint16_t fbField = packet.get_fbField();
-  
+  std::string name = packet.get_name();  
   // convert NFD packet to NS3 packet
   BlockHeader header(packet);
   
@@ -139,7 +139,7 @@ NetDeviceTransport::doSend(const Block& packet)
   
   if(this->m_tc!=NULL){
     NS_LOG_FUNCTION(this << "m_tc!=NULL: sending via m_tc->Send() Addr:" << m_netDevice->GetBroadcast()<<" dev:"<<m_netDevice);
-    m_tc->Send(m_netDevice, Create<NdnQueueDiscItem> (ns3Packet, m_netDevice->GetBroadcast(), L3Protocol::ETHERNET_FRAME_TYPE, header, fbField));
+    m_tc->Send(m_netDevice, Create<NdnQueueDiscItem> (ns3Packet, m_netDevice->GetBroadcast(), L3Protocol::ETHERNET_FRAME_TYPE, header, fbField, name));
     return;
   }
   // send the NS3 packet

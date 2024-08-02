@@ -50,9 +50,14 @@ NdnPacketFilter::DoClassify (Ptr<QueueDiscItem> item) const
 {
   NS_LOG_FUNCTION ("NdnPacketFilter::DoClassify()");
   NS_LOG_FUNCTION (DynamicCast<NdnQueueDiscItem>(item));
-  NS_LOG_FUNCTION (DynamicCast<NdnQueueDiscItem>(item)->GetFbField());
-
-  return Socket::IpTos2Priority(DynamicCast<NdnQueueDiscItem> (item)->GetFbField());
+  NS_LOG_FUNCTION ("FbField: " + std::to_string(DynamicCast<NdnQueueDiscItem>(item)->GetFbField()));
+  NS_LOG_FUNCTION ("Name: " + DynamicCast<NdnQueueDiscItem>(item)->GetName());
+  int32_t band = 15;
+  if (DynamicCast<NdnQueueDiscItem> (item)->GetFbField() == BOOST_BINARY(10111000)){
+	NS_LOG_LOGIC ("Match FbField priority");
+	band = 0;
+  }
+  return band;
 }
 
 }

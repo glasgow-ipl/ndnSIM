@@ -10,13 +10,15 @@ namespace ns3{
   namespace ndn{
     class NdnQueueDiscItem : public QueueDiscItem {
       public:
-        NdnQueueDiscItem (Ptr<Packet> p, const Address & addr, uint16_t protocol, const BlockHeader &header, uint16_t fb_field);
+        NdnQueueDiscItem (Ptr<Packet> p, const Address & addr, uint16_t protocol, const BlockHeader &header, uint16_t fb_field, std::string name);
 
         virtual ~ NdnQueueDiscItem ();
 
         virtual uint32_t GetSize (void) const;
 
         virtual uint16_t GetFbField(void) const;
+
+	virtual std::string GetName(void) const;
 
         virtual void Print (std::ostream &os) const;
 
@@ -38,6 +40,7 @@ namespace ns3{
         NdnQueueDiscItem &operator = (const NdnQueueDiscItem &);
         BlockHeader m_header; //NDN block header
         uint16_t m_fb_field = 0; //forwarding behaviour field
+	std::string m_name= ""; //NDN name
 
     };
   }

@@ -186,7 +186,7 @@ main(int argc, char* argv[])
   int increment_interval = 2;
   string out_dir = "./";
   uint64_t run_num = 1; //defaut run number
-  double duration = 10.0; 
+  double duration = 30.0; 
 
   CommandLine cmd (__FILE__);
   cmd.AddValue("stdPRate", "Standard packet rate (pps) per app instance", std_prefix_rate);
@@ -200,7 +200,7 @@ main(int argc, char* argv[])
   cmd.AddValue("ndQueueSize", "NetDeviceQueueSize",ndQueueSize);
   cmd.AddValue("QDiscSize", "QueueDisc child queue size",q_disc_size);
   cmd.AddValue("duration", "Duration of the experiment",duration);
-  cmd.AddValue("incr_step", "Increment step for prioritised_prefix",increment_step);
+  //cmd.AddValue("incr_step", "Increment step for prioritised_prefix",increment_step);
   cmd.AddValue("incr_interval","Increment interval for prioritised prefix", increment_interval);
   cmd.Parse(argc,argv);
   ns3::RngSeedManager::SetRun(run_num); 
@@ -485,10 +485,8 @@ main(int argc, char* argv[])
   prioConsumerHelperN0.SetPrefix(streaming_service_a+"/live/formula1");
   prioConsumerHelperN0.SetAttribute("Frequency", StringValue(std::to_string(prio_prefix_rate))); 
 
-  if(prio_prefix_rate > 0) {
-    auto prioappsN0 = prioConsumerHelperN0.Install(nodes.Get(0));
-    prioappsN0.Stop(Seconds(duration));
-  }
+  int peak_duration = 2;
+
   if(std_prefix_rate >0) {
     auto appsN4 = consumerHelperN4.Install(nodes.Get(4));
     appsN4.Stop(Seconds(duration));
@@ -512,7 +510,13 @@ main(int argc, char* argv[])
     // Schedule increate in rate
   for (int time_i = 1; time_i<duration;time_i++){
     if(time_i % increment_interval == 0){
-  	  Simulator::Schedule(Seconds(time_i),&prio_freq_config_schedule_handler,time_i,increment_step,prio_prefix_rate);
+	      
+      if(prio_prefix_rate > 0) {
+	std::cout<<"Setting up prioApp at: "<<time_i<<std::endl;
+        auto prioappsN0 = prioConsumerHelperN0.Install(nodes.Get(0));
+	prioappsN0.Start(Seconds(time_i));
+        prioappsN0.Stop(Seconds(time_i+peak_duration));
+      }
     }
   }
 

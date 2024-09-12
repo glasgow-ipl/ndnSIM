@@ -214,7 +214,7 @@ main(int argc, char* argv[])
   prefix.append("-"+std::to_string(prio_payload_size)+"_prio_bytes");
   prefix.append("-"+std::to_string(ndQueueSize)+"_NDqueuePkts");
   prefix.append("-"+std::to_string(q_disc_size)+"_QDiscPkts");
-  prefix.append("-"+std::to_string(increment_step)+"_incr_step");
+  //prefix.append("-"+std::to_string(increment_step)+"_incr_step");
   prefix.append("-"+std::to_string(increment_interval)+"_incr_interval");
 
 

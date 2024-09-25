@@ -547,52 +547,52 @@ main(int argc, char* argv[])
   Config::ConnectWithoutContext("/NodeList/4/DeviceList/*/$ns3::PointToPointNetDevice/MacRx",
 		  MakeCallback(&PcapWriter::TracePacket, &traceN4));
 
-  PcapWriter traceN3(out_dir+prefix+"-ndn_sim_n3.pcap");
-  Config::ConnectWithoutContext("/NodeList/3/DeviceList/*/$ns3::PointToPointNetDevice/MacTx",
-		  MakeCallback(&PcapWriter::TracePacket, &traceN3));
-  Config::ConnectWithoutContext("/NodeList/3/DeviceList/*/$ns3::PointToPointNetDevice/MacRx",
-		  MakeCallback(&PcapWriter::TracePacket, &traceN3));
-
-
-  PcapWriter traceN5(out_dir+prefix+"-ndn_sim_n5.pcap");
-  Config::ConnectWithoutContext("/NodeList/5/DeviceList/*/$ns3::PointToPointNetDevice/MacTx",
-		  MakeCallback(&PcapWriter::TracePacket, &traceN5));
-  Config::ConnectWithoutContext("/NodeList/5/DeviceList/*/$ns3::PointToPointNetDevice/MacRx",
-		  MakeCallback(&PcapWriter::TracePacket, &traceN5));
-
-
-  PcapWriter traceN2(out_dir+prefix+"-ndn_sim_n2-dev_2.pcap");
-  Config::ConnectWithoutContext("/NodeList/2/DeviceList/2/$ns3::PointToPointNetDevice/MacTx",
-		                MakeCallback(&PcapWriter::TracePacket, &traceN2));
-  Config::ConnectWithoutContext("/NodeList/2/DeviceList/2/$ns3::PointToPointNetDevice/MacRx",
-			        MakeCallback(&PcapWriter::TracePacket, &traceN2));
-  PcapWriter traceN2D2TX(out_dir+prefix+"-ndn_sim_n2-dev_2-tx.pcap");
-  Config::ConnectWithoutContext("/NodeList/2/DeviceList/2/$ns3::PointToPointNetDevice/MacTx",
-		                MakeCallback(&PcapWriter::TracePacket, &traceN2D2TX));
-
-  PcapWriter traceN2D1(out_dir+prefix+"-ndn_sim_n2-dev_1.pcap");
-  Config::ConnectWithoutContext("/NodeList/2/DeviceList/1/$ns3::PointToPointNetDevice/MacTx",
-		                MakeCallback(&PcapWriter::TracePacket, &traceN2D1));
-  Config::ConnectWithoutContext("/NodeList/2/DeviceList/1/$ns3::PointToPointNetDevice/MacRx",
-			        MakeCallback(&PcapWriter::TracePacket, &traceN2D1)); 
-  
-
-  PcapWriter traceN2D1rx(out_dir+prefix+"-ndn_sim_n2-dev_1-rx.pcap");
-  Config::ConnectWithoutContext("/NodeList/2/DeviceList/1/$ns3::PointToPointNetDevice/MacRx",
-			        MakeCallback(&PcapWriter::TracePacket, &traceN2D1rx));
-
-  PcapWriter traceN2D0(out_dir+prefix+"-ndn_sim_n2-dev_0.pcap");
-  Config::ConnectWithoutContext("/NodeList/2/DeviceList/0/$ns3::PointToPointNetDevice/MacTx",
-		                MakeCallback(&PcapWriter::TracePacket, &traceN2D0));
-  Config::ConnectWithoutContext("/NodeList/2/DeviceList/0/$ns3::PointToPointNetDevice/MacRx",
-			        MakeCallback(&PcapWriter::TracePacket, &traceN2D0)); 
-  
-  
-  PcapWriter traceN1(out_dir+prefix+"-ndn_sim_n1.pcap");
-  Config::ConnectWithoutContext("/NodeList/1/DeviceList/*/$ns3::PointToPointNetDevice/MacTx",
-				MakeCallback(&PcapWriter::TracePacket, &traceN1));
-  Config::ConnectWithoutContext("/NodeList/1/DeviceList/*/$ns3::PointToPointNetDevice/MacRx",
-			        MakeCallback(&PcapWriter::TracePacket, &traceN1));
+//   PcapWriter traceN3(out_dir+prefix+"-ndn_sim_n3.pcap");
+//   Config::ConnectWithoutContext("/NodeList/3/DeviceList/*/$ns3::PointToPointNetDevice/MacTx",
+// 		  MakeCallback(&PcapWriter::TracePacket, &traceN3));
+//   Config::ConnectWithoutContext("/NodeList/3/DeviceList/*/$ns3::PointToPointNetDevice/MacRx",
+// 		  MakeCallback(&PcapWriter::TracePacket, &traceN3));
+// 
+// 
+//   PcapWriter traceN5(out_dir+prefix+"-ndn_sim_n5.pcap");
+//   Config::ConnectWithoutContext("/NodeList/5/DeviceList/*/$ns3::PointToPointNetDevice/MacTx",
+// 		  MakeCallback(&PcapWriter::TracePacket, &traceN5));
+//   Config::ConnectWithoutContext("/NodeList/5/DeviceList/*/$ns3::PointToPointNetDevice/MacRx",
+// 		  MakeCallback(&PcapWriter::TracePacket, &traceN5));
+// 
+// 
+//   PcapWriter traceN2(out_dir+prefix+"-ndn_sim_n2-dev_2.pcap");
+//   Config::ConnectWithoutContext("/NodeList/2/DeviceList/2/$ns3::PointToPointNetDevice/MacTx",
+// 		                MakeCallback(&PcapWriter::TracePacket, &traceN2));
+//   Config::ConnectWithoutContext("/NodeList/2/DeviceList/2/$ns3::PointToPointNetDevice/MacRx",
+// 			        MakeCallback(&PcapWriter::TracePacket, &traceN2));
+//   PcapWriter traceN2D2TX(out_dir+prefix+"-ndn_sim_n2-dev_2-tx.pcap");
+//   Config::ConnectWithoutContext("/NodeList/2/DeviceList/2/$ns3::PointToPointNetDevice/MacTx",
+// 		                MakeCallback(&PcapWriter::TracePacket, &traceN2D2TX));
+// 
+//   PcapWriter traceN2D1(out_dir+prefix+"-ndn_sim_n2-dev_1.pcap");
+//   Config::ConnectWithoutContext("/NodeList/2/DeviceList/1/$ns3::PointToPointNetDevice/MacTx",
+// 		                MakeCallback(&PcapWriter::TracePacket, &traceN2D1));
+//   Config::ConnectWithoutContext("/NodeList/2/DeviceList/1/$ns3::PointToPointNetDevice/MacRx",
+// 			        MakeCallback(&PcapWriter::TracePacket, &traceN2D1)); 
+//   
+// 
+//   PcapWriter traceN2D1rx(out_dir+prefix+"-ndn_sim_n2-dev_1-rx.pcap");
+//   Config::ConnectWithoutContext("/NodeList/2/DeviceList/1/$ns3::PointToPointNetDevice/MacRx",
+// 			        MakeCallback(&PcapWriter::TracePacket, &traceN2D1rx));
+// 
+//   PcapWriter traceN2D0(out_dir+prefix+"-ndn_sim_n2-dev_0.pcap");
+//   Config::ConnectWithoutContext("/NodeList/2/DeviceList/0/$ns3::PointToPointNetDevice/MacTx",
+// 		                MakeCallback(&PcapWriter::TracePacket, &traceN2D0));
+//   Config::ConnectWithoutContext("/NodeList/2/DeviceList/0/$ns3::PointToPointNetDevice/MacRx",
+// 			        MakeCallback(&PcapWriter::TracePacket, &traceN2D0)); 
+//   
+//   
+//   PcapWriter traceN1(out_dir+prefix+"-ndn_sim_n1.pcap");
+//   Config::ConnectWithoutContext("/NodeList/1/DeviceList/*/$ns3::PointToPointNetDevice/MacTx",
+// 				MakeCallback(&PcapWriter::TracePacket, &traceN1));
+//   Config::ConnectWithoutContext("/NodeList/1/DeviceList/*/$ns3::PointToPointNetDevice/MacRx",
+// 			        MakeCallback(&PcapWriter::TracePacket, &traceN1));
 
   Simulator::Stop(Seconds(duration));
 
